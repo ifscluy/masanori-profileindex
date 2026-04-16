@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Takayama Masanori</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%;
+  height:100%;
+  background:#000;
+  font-family:'Share Tech Mono', monospace;
+  overflow:hidden;
+}
+
+/* hide the checkbox — it's only a toggle mechanism */
+#toggle {
+  display:none;
+}
+
+/* ── LOCKED SCREEN ── */
+#locked {
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  z-index:10;
+  transition:opacity 0.6s, visibility 0.6s;
+}
+
+/* scanlines over locked */
+#locked::after {
+  content:'';
+  position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+  );
+}
+
+/* corner marks */
+#locked::before {
+  content:'';
+  position:absolute;
+  top:16px; left:16px;
+  width:20px; height:20px;
+  border-top:1px solid #333;
+  border-left:1px solid #333;
+}
+
+.lock-wrap {
+  display:flex; flex-direction:column; align-items:center;
+  position:relative; z-index:2;
+}
+
+.lock-icon {
+  width:46px; height:46px;
+  border:1px solid #3a3a3a;
+  border-radius:2px;
+  position:relative;
+  margin-bottom:28px;
+}
+.lock-icon::before {
+  content:'';
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+  width:22px; height:20px;
+  border:1px solid #3a3a3a; border-bottom:none;
+  border-radius:11px 11px 0 0;
+}
+.lock-icon::after {
+  content:'';
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-30%);
+  width:6px; height:10px;
+  background:#3a3a3a; border-radius:1px;
+}
+
+.lock-title {
+  font-size:clamp(9px,1.5vw,12px);
+  letter-spacing:0.5em; color:#555;
+  text-transform:uppercase; margin-bottom:10px;
+}
+.lock-sub {
+  font-size:clamp(8px,1.1vw,10px);
+  letter-spacing:0.3em; color:#383838;
+  text-transform:uppercase; margin-bottom:32px;
+}
+
+/* THE BUTTON — a label linked to the checkbox */
+.breach-label {
+  display:inline-block;
+  border:1px solid #484848;
+  color:#777;
+  font-family:'Share Tech Mono', monospace;
+  font-size:clamp(9px,1.3vw,11px);
+  letter-spacing:0.4em;
+  text-transform:uppercase;
+  padding:11px 32px;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  animation:blink 1.6s ease-in-out infinite;
+  transition:border-color 0.25s, color 0.25s;
+}
+.breach-label:hover {
+  border-color:#aaa; color:#ccc;
+  animation:none;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* when checkbox is checked → hide locked, show revealed */
+#toggle:checked ~ #locked {
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+#toggle:checked ~ #revealed {
+  opacity:1;
+  pointer-events:auto;
+}
+
+/* ── REVEALED PROFILE ── */
+#revealed {
+  position:fixed;
+  inset:0;
+  display:flex;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.9s 0.3s;
+  overflow:hidden;
+}
+
+/* scanlines over revealed */
+#revealed::after {
+  content:'';
+  position:absolute; inset:0; pointer-events:none; z-index:50;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+  );
+}
+
+/* vignette */
+#revealed::before {
+  content:'';
+  position:absolute; inset:0; pointer-events:none; z-index:49;
+  background:radial-gradient(ellipse at 60% 50%, transparent 25%, rgba(0,0,0,0.85) 100%);
+}
+
+/* portrait */
+#portrait-col {
+  flex:0 0 38%;
+  max-width:300px;
+  min-width:160px;
+  position:relative;
+  overflow:hidden;
+  align-self:stretch;
+}
+
+#portrait-img {
+  position:absolute; bottom:0; left:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center top;
+  filter:grayscale(100%) contrast(1.15) brightness(0.85);
+  -webkit-mask-image:
+    linear-gradient(to right, black 45%, transparent 100%),
+    linear-gradient(to top,   black 58%, transparent 100%);
+  -webkit-mask-composite:destination-in;
+  mask-image:
+    linear-gradient(to right, black 45%, transparent 100%),
+    linear-gradient(to top,   black 58%, transparent 100%);
+  mask-composite:intersect;
+}
+
+/* hologram scanbar — pure CSS animation */
+#portrait-col::before {
+  content:'';
+  position:absolute; left:0; right:0; height:4px;
+  background:rgba(255,255,255,0.13);
+  z-index:5;
+  animation:scanbar 3.2s linear infinite;
+}
+@keyframes scanbar { 0%{top:-6px} 100%{top:106%} }
+
+/* hologram lines */
+#portrait-col::after {
+  content:'';
+  position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent, transparent 4px,
+    rgba(160,210,255,0.04) 4px, rgba(160,210,255,0.04) 5px
+  );
+  animation:flicker 6s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,100%{opacity:1}
+  91%{opacity:1} 92%{opacity:0.35} 93%{opacity:1} 96%{opacity:0.6} 97%{opacity:1}
+}
+
+/* info panel */
+#info-col {
+  flex:1; min-width:0;
+  padding:clamp(16px,3vh,36px) clamp(12px,2.5vw,36px) clamp(14px,2.5vh,24px) clamp(16px,3vw,48px);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  position:relative; z-index:2;
+}
+
+.nm-k {
+  font-size:clamp(8px,1.1vw,10px);
+  letter-spacing:0.55em; color:#555;
+  text-transform:uppercase; margin-bottom:5px;
+}
+.nm-main {
+  font-size:clamp(19px,3.6vw,42px);
+  letter-spacing:0.2em; color:#e5e5e5;
+  text-transform:uppercase; line-height:1.05;
+}
+.divider {
+  width:100%; height:1px;
+  background:linear-gradient(90deg,#666,transparent);
+  margin:clamp(8px,1.6vh,14px) 0;
+}
+
+.quote-block {
+  font-size:clamp(8px,1.1vw,11px);
+  line-height:1.9; color:#5a5a5a;
+  letter-spacing:0.05em; font-style:italic;
+  margin-bottom:clamp(9px,1.8vh,16px);
+  border-left:1px solid #2e2e2e; padding-left:14px;
+}
+
+.bio {
+  font-size:clamp(9.5px,1.2vw,11.5px);
+  line-height:1.95; color:#888;
+  letter-spacing:0.02em;
+  margin-bottom:clamp(9px,1.8vh,16px);
+  flex-shrink:1;
+}
+.bio .hi  { color:#ccc; }
+.bio .dim { color:#444; }
+
+.dgrid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:clamp(6px,1.2vh,11px) clamp(12px,2.5vw,26px);
+  margin-bottom:clamp(9px,1.8vh,14px);
+  flex-shrink:0;
+}
+.dk {
+  font-size:clamp(7px,0.9vw,8px);
+  letter-spacing:0.4em; color:#454545;
+  text-transform:uppercase; margin-bottom:3px;
+}
+.dv {
+  font-size:clamp(10px,1.15vw,12px);
+  color:#999; letter-spacing:0.04em;
+}
+
+.bbar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border-top:1px solid #1e1e1e; padding-top:10px;
+  margin-top:auto; flex-shrink:0;
+}
+.tag    { font-size:clamp(7px,0.9vw,8px); letter-spacing:0.28em; color:#333; text-transform:uppercase; border:1px solid #252525; padding:3px 9px; }
+.tag.on { color:#666; border-color:#444; }
+
+/* corner marks on revealed */
+.rc { position:absolute; width:16px; height:16px; pointer-events:none; z-index:55; }
+.rc.tl { top:13px; left:13px; border-top:1px solid #2a2a2a; border-left:1px solid #2a2a2a; }
+.rc.tr { top:13px; right:13px; border-top:1px solid #2a2a2a; border-right:1px solid #2a2a2a; }
+.rc.bl { bottom:13px; left:13px; border-bottom:1px solid #2a2a2a; border-left:1px solid #2a2a2a; }
+.rc.br { bottom:13px; right:13px; border-bottom:1px solid #2a2a2a; border-right:1px solid #2a2a2a; }
+
+</style>
+</head>
+<body>
+
+<!-- CHECKBOX TOGGLE — the engine of everything -->
+<input type="checkbox" id="toggle"/>
+
+<!-- LOCKED -->
+<div id="locked">
+  <div class="lock-wrap">
+    <div class="lock-icon"></div>
+    <div class="lock-title">// CLASSIFIED PROFILE</div>
+    <div class="lock-sub">ACCESS RESTRICTED &nbsp;·&nbsp; CLEARANCE REQUIRED</div>
+    <label class="breach-label" for="toggle">[ BREACH ACCESS ]</label>
+  </div>
+</div>
+
+<!-- REVEALED -->
+<div id="revealed">
+  <div class="rc tl"></div>
+  <div class="rc tr"></div>
+  <div class="rc bl"></div>
+  <div class="rc br"></div>
+
+  <!-- portrait + hologram (CSS-only) -->
+  <div id="portrait-col">
+    <img id="portrait-img"
+      src="https://i.ibb.co/RTfH1Gkv/image.png"
+      alt="Takayama Masanori"
+    />
+  </div>
+
+  <!-- info -->
+  <div id="info-col">
+    <div class="nm-k">高山 正則</div>
+    <div class="nm-main">TAKAYAMA<br>MASANORI</div>
+    <div class="divider"></div>
+
+    <div class="quote-block">
+      "The present is theirs, the future,<br>
+      for which I really worked, is mine."
+    </div>
+
+    <div class="bio">
+      Artificer. Engineer. Architect. <span class="hi">Ripperdoc</span>.<br>
+      A man whose entire life was poured into a single conviction:<br>
+      that <span class="hi">ordinary people deserve extraordinary tools</span>.<br><br>
+      His work in <span class="hi">magitech</span> was never about power for its own sake.<br>
+      It was about <span class="hi">closing the gap</span> — giving non-magi<br>
+      what the gifted were born with. Augmentation as liberation.<br><br>
+      He holds <span class="hi">no reverence for gods</span>. None.<br>
+      The divine are architects of dependency — and he has spent<br>
+      decades building the alternative.<br>
+      <span class="dim">Mortals don't need patrons. They never did.</span>
+    </div>
+
+    <div class="dgrid">
+      <div><div class="dk">Role</div><div class="dv">Artificer</div></div>
+      <div><div class="dk">Specialty</div><div class="dv">Magitech</div></div>
+      <div><div class="dk">Discipline</div><div class="dv">Architecture</div></div>
+      <div><div class="dk">Profile</div><div class="dv">Skeptic · Reclusive</div></div>
+    </div>
+
+    <div class="bbar">
+      <span class="tag on">ARTIFICER</span>
+      <span class="tag on">MAGITECH</span>
+      <span class="tag on">ANTI-DIVINE</span>
+      <span class="tag">NON-COMBATANT</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
