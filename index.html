@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Takayama Masanori</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html {
+  width:100%;
+  height:100%;
+}
+
+body {
+  width:100%;
+  height:100%;
+  background:#000;
+  font-family:'Share Tech Mono', monospace;
+  overflow:hidden;
+}
+
+#root {
+  width:100%;
+  height:100%;
+  min-height:500px;
+  background:#000;
+  position:relative;
+  overflow:hidden;
+}
+
+/* scanlines */
+#scanlines {
+  position:absolute; inset:0; pointer-events:none; z-index:60;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent, transparent 3px,
+    rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+  );
+}
+
+/* vignette */
+#vignette {
+  position:absolute; inset:0; pointer-events:none; z-index:59;
+  background:radial-gradient(ellipse at 60% 50%, transparent 25%, rgba(0,0,0,0.85) 100%);
+}
+
+/* ── LOCKED STATE ── */
+#locked {
+  position:absolute; inset:0; z-index:40;
+  background:#000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:0;
+  transition:opacity 0.7s;
+}
+
+.lc { position:absolute; width:20px; height:20px; }
+.lc.tl { top:16px; left:16px; border-top:1px solid #333; border-left:1px solid #333; }
+.lc.tr { top:16px; right:16px; border-top:1px solid #333; border-right:1px solid #333; }
+.lc.bl { bottom:16px; left:16px; border-bottom:1px solid #333; border-left:1px solid #333; }
+.lc.br { bottom:16px; right:16px; border-bottom:1px solid #333; border-right:1px solid #333; }
+
+.lock-icon {
+  width:46px; height:46px;
+  border:1px solid #3a3a3a;
+  border-radius:2px;
+  position:relative;
+  margin-bottom:28px;
+}
+.lock-icon::before {
+  content:'';
+  position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+  width:22px; height:19px;
+  border:1px solid #3a3a3a; border-bottom:none; border-radius:11px 11px 0 0;
+}
+.lock-icon::after {
+  content:'';
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-30%);
+  width:6px; height:10px; background:#3a3a3a; border-radius:1px;
+}
+
+#ltitle {
+  font-size:clamp(9px,1.4vw,12px);
+  letter-spacing:0.5em; color:#555;
+  text-transform:uppercase; margin-bottom:10px;
+}
+#lsub {
+  font-size:clamp(8px,1vw,10px);
+  letter-spacing:0.3em; color:#383838;
+  text-transform:uppercase; margin-bottom:32px;
+}
+
+#breach-btn {
+  background:transparent;
+  border:1px solid #444;
+  color:#666;
+  font-family:'Share Tech Mono', monospace;
+  font-size:clamp(9px,1.2vw,11px);
+  letter-spacing:0.4em;
+  text-transform:uppercase;
+  padding:11px 32px;
+  cursor:pointer;
+  outline:none;
+  user-select:none;
+  -webkit-user-select:none;
+  animation:blink 1.6s ease-in-out infinite;
+  transition:border-color 0.25s, color 0.25s, background 0.25s;
+}
+#breach-btn:hover {
+  border-color:#aaa; color:#ccc;
+  background:rgba(255,255,255,0.04);
+  animation:none;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+.gl { position:absolute; left:0; right:0; height:1px; background:rgba(255,255,255,0.03); pointer-events:none; }
+
+/* ── HACK FLASH ── */
+#hack { position:absolute; inset:0; z-index:50; pointer-events:none; opacity:0; }
+.hbar { position:absolute; left:0; right:0; height:2px; }
+
+/* ── REVEALED ── */
+#revealed {
+  position:absolute; inset:0; z-index:30;
+  display:flex;
+  opacity:0; pointer-events:none;
+  transition:opacity 1s 0.4s;
+}
+#revealed.show { opacity:1; pointer-events:auto; }
+
+/* portrait */
+#portrait-col {
+  flex:0 0 36%;
+  max-width:280px;
+  position:relative;
+  overflow:hidden;
+  align-self:stretch;
+}
+
+#portrait-img {
+  position:absolute; bottom:0; left:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center top;
+  filter:grayscale(100%) contrast(1.15) brightness(0.85);
+  -webkit-mask-image:
+    linear-gradient(to right, black 45%, transparent 100%),
+    linear-gradient(to top,   black 60%, transparent 100%);
+  -webkit-mask-composite:destination-in;
+  mask-image:
+    linear-gradient(to right, black 45%, transparent 100%),
+    linear-gradient(to top,   black 60%, transparent 100%);
+  mask-composite:intersect;
+}
+
+/* hologram layers */
+#holo-lines {
+  position:absolute; inset:0; pointer-events:none; z-index:4;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent, transparent 4px,
+    rgba(160,210,255,0.04) 4px, rgba(160,210,255,0.04) 5px
+  );
+}
+#holo-scan { position:absolute; inset:0; pointer-events:none; z-index:5; overflow:hidden; }
+#holo-scan::before {
+  content:''; position:absolute; left:0; right:0; height:4px;
+  background:rgba(255,255,255,0.14);
+  animation:scanbar 3.2s linear infinite;
+}
+@keyframes scanbar { 0%{top:-6px} 100%{top:106%} }
+#holo-flicker {
+  position:absolute; inset:0; pointer-events:none; z-index:6;
+  background:rgba(180,220,255,0.03);
+  animation:flicker 6s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,100%{opacity:1}
+  91%{opacity:1} 92%{opacity:0.3} 93%{opacity:1} 96%{opacity:0.6} 97%{opacity:1}
+}
+/* occasional horizontal glitch slice on portrait */
+#holo-glitch {
+  position:absolute; inset:0; pointer-events:none; z-index:7;
+  opacity:0;
+  animation:hglitch 9s steps(1) infinite;
+}
+@keyframes hglitch {
+  0%,94%,100%{ opacity:0; transform:none; clip-path:none; }
+  95%{ opacity:1; clip-path:inset(18% 0 72% 0); transform:translateX(5px); }
+  96%{ opacity:1; clip-path:inset(55% 0 25% 0); transform:translateX(-4px); }
+  97%{ opacity:0; }
+}
+
+/* ── INFO COLUMN ── */
+#info-col {
+  flex:1; min-width:0;
+  padding:clamp(18px,3.5vh,38px) clamp(14px,3vw,38px) clamp(16px,2.5vh,26px) clamp(18px,3.5vw,50px);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+
+#nm-k {
+  font-size:clamp(8px,1.1vw,10px);
+  letter-spacing:0.55em; color:#555;
+  text-transform:uppercase; margin-bottom:5px;
+}
+#nm-main {
+  font-size:clamp(20px,3.8vw,44px);
+  letter-spacing:0.2em; color:#e8e8e8;
+  text-transform:uppercase; line-height:1.05;
+  text-shadow:0 0 30px rgba(255,255,255,0.08);
+}
+#divider {
+  width:100%; height:1px;
+  background:linear-gradient(90deg,#666,transparent);
+  margin:clamp(9px,1.8vh,15px) 0;
+}
+
+#quote {
+  font-size:clamp(9px,1.15vw,11px);
+  line-height:1.9; color:#5a5a5a;
+  letter-spacing:0.05em; font-style:italic;
+  margin-bottom:clamp(10px,2vh,18px);
+  border-left:1px solid #2e2e2e; padding-left:14px;
+}
+
+#bio {
+  font-size:clamp(9.5px,1.2vw,11.5px);
+  line-height:1.95; color:#888;
+  letter-spacing:0.02em;
+  margin-bottom:clamp(10px,2vh,18px);
+  flex-shrink:1; overflow:hidden;
+}
+#bio .hi  { color:#ccc; font-style:normal; }
+#bio .dim { color:#444; }
+
+#dgrid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:clamp(6px,1.2vh,11px) clamp(14px,2.5vw,28px);
+  margin-bottom:clamp(10px,1.8vh,15px);
+  flex-shrink:0;
+}
+.dk {
+  font-size:clamp(7px,0.9vw,8px);
+  letter-spacing:0.4em; color:#444;
+  text-transform:uppercase; margin-bottom:3px;
+}
+.dv {
+  font-size:clamp(10px,1.15vw,12px);
+  color:#999; letter-spacing:0.04em;
+}
+
+#bbar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  border-top:1px solid #1e1e1e; padding-top:11px;
+  margin-top:auto; flex-shrink:0;
+}
+.tag    { font-size:clamp(7px,0.9vw,8px); letter-spacing:0.3em; color:#333; text-transform:uppercase; border:1px solid #252525; padding:3px 10px; }
+.tag.on { color:#666; border-color:#444; }
+
+/* corner marks */
+.rc { position:absolute; width:16px; height:16px; pointer-events:none; z-index:35; }
+.rc.tl { top:13px; left:13px; border-top:1px solid #2a2a2a; border-left:1px solid #2a2a2a; }
+.rc.tr { top:13px; right:13px; border-top:1px solid #2a2a2a; border-right:1px solid #2a2a2a; }
+.rc.bl { bottom:13px; left:13px; border-bottom:1px solid #2a2a2a; border-left:1px solid #2a2a2a; }
+.rc.br { bottom:13px; right:13px; border-bottom:1px solid #2a2a2a; border-right:1px solid #2a2a2a; }
+
+/* entry animations */
+.fy { opacity:0; transform:translateY(-14px); transition:opacity 0.7s, transform 0.7s; }
+.fx { opacity:0; transform:translateX(22px);  transition:opacity 0.7s, transform 0.7s; }
+.in { opacity:1 !important; transform:none !important; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="scanlines"></div>
+  <div id="vignette"></div>
+
+  <!-- LOCKED -->
+  <div id="locked">
+    <div class="lc tl"></div><div class="lc tr"></div>
+    <div class="lc bl"></div><div class="lc br"></div>
+    <div class="gl" style="top:19%"></div>
+    <div class="gl" style="top:51%"></div>
+    <div class="gl" style="top:76%"></div>
+    <div class="lock-icon"></div>
+    <div id="ltitle">// CLASSIFIED PROFILE</div>
+    <div id="lsub">ACCESS RESTRICTED &nbsp;·&nbsp; CLEARANCE REQUIRED</div>
+    <button id="breach-btn" onclick="breach()">[ BREACH ACCESS ]</button>
+  </div>
+
+  <!-- HACK FLASH -->
+  <div id="hack"></div>
+
+  <!-- REVEALED -->
+  <div id="revealed">
+    <div class="rc tl"></div><div class="rc tr"></div>
+    <div class="rc bl"></div><div class="rc br"></div>
+
+    <!-- portrait + hologram -->
+    <div id="portrait-col">
+      <img id="portrait-img"
+        src="https://i.ibb.co/RTfH1Gkv/image.png"
+        alt="Takayama Masanori"
+        crossorigin="anonymous"
+      />
+      <div id="holo-lines"></div>
+      <div id="holo-scan"></div>
+      <div id="holo-flicker"></div>
+      <div id="holo-glitch"></div>
+    </div>
+
+    <!-- info -->
+    <div id="info-col">
+      <div id="nm-k"    class="fy">高山 正則</div>
+      <div id="nm-main" class="fy">TAKAYAMA<br>MASANORI</div>
+      <div id="divider" class="fy"></div>
+
+      <div id="quote" class="fx">
+        "The present is theirs, the future,<br>
+        for which I really worked, is mine."
+      </div>
+
+      <div id="bio" class="fx">
+        Artificer. Engineer. Architect. <span class="hi">Ripperdoc</span>.<br>
+        A man whose entire life was poured into a single conviction:<br>
+        that <span class="hi">ordinary people deserve extraordinary tools</span>.<br><br>
+        His work in <span class="hi">magitech</span> was never about power for its own sake.<br>
+        It was about <span class="hi">closing the gap</span> — giving non-magi what the<br>
+        gifted were born with. Augmentation as liberation.<br><br>
+        He holds <span class="hi">no reverence for gods</span>. None. The divine, in his view,<br>
+        are architects of dependency — and he has spent decades<br>
+        building the alternative. <span class="dim">Mortals don't need patrons.<br>
+        They never did.</span>
+      </div>
+
+      <div id="dgrid" class="fx">
+        <div><div class="dk">Role</div><div class="dv">Artificer</div></div>
+        <div><div class="dk">Specialty</div><div class="dv">Magitech</div></div>
+        <div><div class="dk">Discipline</div><div class="dv">Architecture</div></div>
+        <div><div class="dk">Profile</div><div class="dv">Skeptic · Reclusive</div></div>
+      </div>
+
+      <div id="bbar" class="fx">
+        <span class="tag on">ARTIFICER</span>
+        <span class="tag on">MAGITECH</span>
+        <span class="tag on">ANTI-DIVINE</span>
+        <span class="tag">NON-COMBATANT</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function breach() {
+  var locked   = document.getElementById('locked');
+  var revealed = document.getElementById('revealed');
+  var hack     = document.getElementById('hack');
+  var btn      = document.getElementById('breach-btn');
+
+  btn.disabled = true;
+  hack.style.opacity = '1';
+
+  var n = 0;
+  var iv = setInterval(function() {
+    hack.innerHTML = '';
+    for (var i = 0; i < 12; i++) {
+      var b = document.createElement('div');
+      b.className = 'hbar';
+      b.style.top     = (Math.random() * 100) + '%';
+      b.style.height  = (Math.random() < 0.3 ? 4 : 2) + 'px';
+      b.style.opacity = (Math.random() * 0.5).toFixed(2);
+      b.style.background = 'rgba(255,255,255,' + (Math.random() * 0.15).toFixed(2) + ')';
+      hack.appendChild(b);
+    }
+    n++;
+    if (n > 18) {
+      clearInterval(iv);
+      hack.style.opacity = '0';
+      hack.innerHTML = '';
+    }
+  }, 55);
+
+  setTimeout(function() {
+    locked.style.opacity = '0';
+    locked.style.pointerEvents = 'none';
+  }, 400);
+
+  setTimeout(function() {
+    revealed.classList.add('show');
+
+    var fys = document.querySelectorAll('.fy');
+    for (var i = 0; i < fys.length; i++) {
+      (function(el, idx) {
+        setTimeout(function() { el.classList.add('in'); }, idx * 90);
+      })(fys[i], i);
+    }
+
+    var fxs = document.querySelectorAll('.fx');
+    for (var j = 0; j < fxs.length; j++) {
+      (function(el, idx) {
+        setTimeout(function() { el.classList.add('in'); }, 80 + idx * 90);
+      })(fxs[j], j);
+    }
+  }, 720);
+}
+</script>
+</body>
+</html>
